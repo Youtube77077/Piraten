@@ -1,5 +1,6 @@
-import { motion } from 'motion/react';
-import { useState } from 'react';
+import { animate, motion, useMotionValue, useTransform } from 'motion/react';
+import { useEffect, useState } from 'react';
+import { sfx } from '../lib/sound';
 import type { Outfit } from '../lib/outfits';
 import { duration, ease, fadeUp, pressable, spring, stagger } from '../motion';
 import { GoldButton, type ButtonState } from './GoldButton';
@@ -18,6 +19,20 @@ interface Props {
 export function ProfileScreen({ username, level, outfit, behind, onGrant, onBack, onImageError }: Props) {
   const [state, setState] = useState<ButtonState>('idle');
   const nameScale = Math.min(1, 10 / Math.max(username.length, 1));
+
+  // Card flips in, then the level rolls up from 0.
+  const levelValue = useMotionValue(0);
+  const levelText = useTransform(levelValue, (v) => String(Math.round(v)));
+  useEffect(() => {
+    const t1 = window.setTimeout(() => sfx.reveal(), 120);
+    const t2 = window.setTimeout(() => sfx.count(0.9), 950);
+    const controls = animate(levelValue, level, { duration: 1.1, ease: [0.16, 1, 0.3, 1], delay: 0.95 });
+    return () => {
+      clearTimeout(t1);
+      clearTimeout(t2);
+      controls.stop();
+    };
+  }, [level, levelValue]);
 
   function grant() {
     if (state !== 'idle') return;
@@ -46,9 +61,9 @@ export function ProfileScreen({ username, level, outfit, behind, onGrant, onBack
         <motion.figure
           className="locker"
           variants={{
-            hidden: { opacity: 0, scale: 0.9, y: 24 },
-            show: { opacity: 1, scale: 1, y: 0, transition: spring.soft },
-            exit: { opacity: 0, scale: 0.96, transition: { duration: duration.short, ease: ease.in } },
+            hidden: { opacity: 0, scale: 0.8, rotateY: -100, y: 30 },
+            show: { opacity: 1, scale: 1, rotateY: 0, y: 0, transition: { ...spring.soft, opacity: { duration: 0.35, ease: ease.out } } },
+            exit: { opacity: 0, scale: 0.94, transition: { duration: duration.short, ease: ease.in } },
           }}
         >
           <div className="locker__frame">
@@ -66,6 +81,7 @@ export function ProfileScreen({ username, level, outfit, behind, onGrant, onBack
                 transition={{ ...spring.soft, delay: 0.42, opacity: { duration: 0.6, delay: 0.42 } }}
               />
               <span className="locker__floor" aria-hidden="true" />
+              <span className="locker__shine" aria-hidden="true" />
             </div>
           </div>
         </motion.figure>
@@ -85,7 +101,7 @@ export function ProfileScreen({ username, level, outfit, behind, onGrant, onBack
               <svg viewBox="0 0 40 44">
                 <path d="M20 2l16.5 9.5v21L20 42 3.5 32.5v-21z" />
               </svg>
-              <span>{level}</span>
+              <motion.span>{levelText}</motion.span>
             </span>
             <span className="level__label">Account level</span>
           </motion.div>

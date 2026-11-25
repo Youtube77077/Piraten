@@ -11,6 +11,7 @@ import { tap } from './lib/native';
 import { randomLevel } from './lib/random';
 import { addRecent, readRecent, saveRecent, type RecentAccount } from './lib/recent';
 import { useSettings } from './lib/settings';
+import { sfx } from './lib/sound';
 
 type Stage = 'intro' | 'profile' | 'reward';
 
@@ -44,12 +45,14 @@ export default function App() {
 
   const findAccount = useCallback(async (username: string) => {
     void tap('LIGHT');
+    sfx.search();
     const started = performance.now();
     const outfit = await takeRandomOutfit(lastOutfit.current);
     lastOutfit.current = outfit.id;
     const wait = MIN_SEARCH_MS - (performance.now() - started);
     if (wait > 0) await new Promise((r) => setTimeout(r, wait));
     setSession({ username, level: randomLevel(), outfit });
+    sfx.found();
     await new Promise((r) => setTimeout(r, 260)); // let the "Found" state register
     setStage('profile');
   }, []);
@@ -83,6 +86,7 @@ export default function App() {
 
   const rewardFinished = useCallback(() => {
     if (session) setRecent((list) => addRecent(list, { ...session, at: Date.now() }));
+    sfx.home();
     goHome(false);
   }, [session, goHome]);
 

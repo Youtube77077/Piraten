@@ -3,6 +3,7 @@ import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import type { Outfit } from '../lib/outfits';
 import { success, tap } from '../lib/native';
 import { randomInt } from '../lib/random';
+import { sfx } from '../lib/sound';
 import { duration, ease, fadeUp, spring, stagger } from '../motion';
 import { Token } from './Token';
 import logoSmallUrl from '../assets/brand/logo-256.webp';
@@ -47,6 +48,10 @@ export function RewardSequence({ username, level, outfit, onFinished }: Props) {
 
   // 1. charge
   useEffect(() => {
+    let stopRiser: () => void = () => undefined;
+    const riser = window.setTimeout(() => {
+      stopRiser = sfx.charge(chargeSeconds);
+    }, CHARGE_DELAY * 1000);
     const controls = animate(progress, 100, {
       duration: chargeSeconds,
       ease: [0.45, 0.05, 0.25, 1],
@@ -56,15 +61,22 @@ export function RewardSequence({ username, level, outfit, onFinished }: Props) {
         setStatusIdx((cur) => (cur === idx ? cur : idx));
       },
       onComplete: () => {
+        stopRiser();
+        sfx.burst();
         setPhase('burst');
         void success();
       },
     });
     const ticks = [0.34, 0.74].map((f) =>
-      window.setTimeout(() => void tap('LIGHT'), (CHARGE_DELAY + chargeSeconds * f) * 1000),
+      window.setTimeout(() => {
+        sfx.step();
+        void tap('LIGHT');
+      }, (CHARGE_DELAY + chargeSeconds * f) * 1000),
     );
     return () => {
       controls.stop();
+      clearTimeout(riser);
+      stopRiser();
       ticks.forEach(clearTimeout);
     };
   }, [progress, chargeSeconds]);
@@ -76,8 +88,12 @@ export function RewardSequence({ username, level, outfit, onFinished }: Props) {
       return () => clearTimeout(t);
     }
     if (phase === 'complete') {
+      const s = window.setTimeout(() => sfx.complete(), 120);
       const t = window.setTimeout(finish, RETURN_MS);
-      return () => clearTimeout(t);
+      return () => {
+        clearTimeout(s);
+        clearTimeout(t);
+      };
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [phase]);
@@ -96,6 +112,34 @@ export function RewardSequence({ username, level, outfit, onFinished }: Props) {
 
   const done = phase !== 'charge';
   const complete = phase === 'complete';
+
+  const confetti = useMemo(() => {
+    const colors = ['#1f8ef1', '#0b5fd6', '#ffffff', '#5cc8ff', '#fff3b0'];
+    return Array.from({ length: 46 }, (_, i) => {
+      const a = (i / 46) * Math.PI * 2 + (i % 3) * 0.21;
+      const d = 140 + ((i * 53) % 190);
+      return {
+        key: i,
+        color: colors[i % colors.length],
+        w: 6 + (i % 4) * 2,
+        h: i % 3 === 0 ? 6 + (i % 4) * 2 : 12 + (i % 5) * 2,
+        round: i % 4 === 0,
+        x: Math.cos(a) * d,
+        y: Math.sin(a) * d * 0.8 - 60,
+        fall: 260 + ((i * 37) % 220),
+        r1: (i % 2 ? 1 : -1) * (180 + ((i * 41) % 360)),
+        r2: (i % 2 ? 1 : -1) * (540 + ((i * 29) % 360)),
+        delay: (i % 6) * 0.025,
+      };
+    });
+  }, []);
+  const [confettiOn, setConfettiOn] = useState(false);
+  useEffect(() => {
+    if (phase !== 'burst') return;
+    setConfettiOn(true);
+    const t = window.setTimeout(() => setConfettiOn(false), 2600);
+    return () => clearTimeout(t);
+  }, [phase]);
 
   // The layout is fixed from the first frame (hero at its final spot, completion content
   // reserved but hidden). While charging, the hero group is moved to the screen centre and
@@ -155,7 +199,11 @@ export function RewardSequence({ username, level, outfit, onFinished }: Props) {
           exit: { opacity: 0, transition: { duration: 0.6 } },
         }}
       />
-      <motion.div className="reward__rays-wrap" animate={{ y: complete ? '-18vh' : '0vh' }} transition={spring.smooth}>
+      <motion.div
+        className="reward__rays-wrap"
+        animate={{ y: complete ? '-18vh' : '0vh', scale: phase === 'burst' ? [1, 1.25, 1.1] : complete ? 1.1 : 1 }}
+        transition={{ y: spring.smooth, scale: { duration: 0.9, ease: ease.out } }}
+      >
         <motion.div
           className="reward__rays"
           variants={{
@@ -174,6 +222,11 @@ export function RewardSequence({ username, level, outfit, onFinished }: Props) {
           exit: { opacity: 0, scale: 0.96, transition: { duration: 0.6, ease: ease.inOut } },
         }}
       >
+        <motion.div
+          className="reward__shake"
+          animate={phase === 'burst' ? { x: [0, -14, 12, -8, 5, -2, 0], y: [0, 8, -6, 4, -2, 1, 0] } : { x: 0, y: 0 }}
+          transition={{ duration: 0.6, ease: ease.out }}
+        >
         <motion.div ref={groupRef} className="reward__group" style={{ y: gy, scale: gs }}>
           <div className="reward__hero">
             {/* progress ring */}
@@ -218,14 +271,20 @@ export function RewardSequence({ username, level, outfit, onFinished }: Props) {
             <motion.div
               className="reward__token"
               initial={{ opacity: 0, scale: 0.55, y: 40 }}
-              animate={phase === 'burst' ? { opacity: 1, y: 0, scale: [1, 1.14, 1] } : { opacity: 1, scale: 1, y: 0 }}
+              animate={
+                phase === 'burst'
+                  ? { opacity: 1, y: 0, scale: [1, 1.22, 1], rotateY: [0, 360] }
+                  : { opacity: 1, scale: 1, y: 0, rotateY: done ? 360 : 0 }
+              }
               transition={
                 phase === 'burst'
-                  ? { duration: 0.7, ease: ease.out, times: [0, 0.3, 1] }
+                  ? { duration: 0.9, ease: ease.emphasized, times: [0, 0.35, 1] }
                   : { ...spring.soft, opacity: { duration: 0.5, ease: ease.out } }
               }
             >
-              <Token className="token--reward" glow float={!done} sheen={complete} />
+              <span className={`reward__heat ${done ? '' : `heat-${statusIdx}`}`}>
+                <Token className="token--reward" glow float={!done} sheen={complete} />
+              </span>
             </motion.div>
 
             {/* burst: flash + shockwave */}
@@ -309,8 +368,14 @@ export function RewardSequence({ username, level, outfit, onFinished }: Props) {
           inert={!complete}
           aria-hidden={!complete}
         >
-          <motion.h2 variants={fadeUp} className="complete__title">
-            Pirate Token <span>experience complete</span>
+          <motion.h2
+            className="complete__title"
+            variants={{
+              hidden: { opacity: 0, scale: 1.7 },
+              show: { opacity: 1, scale: 1, transition: { ...spring.pop, opacity: { duration: 0.2, ease: ease.out } } },
+            }}
+          >
+            Pirate Token <span>complete</span>
           </motion.h2>
 
           <motion.div variants={fadeUp} className="summary">
@@ -331,7 +396,34 @@ export function RewardSequence({ username, level, outfit, onFinished }: Props) {
             <span className={complete ? 'is-running' : undefined} style={{ animationDuration: `${RETURN_MS}ms` }} />
           </motion.div>
         </motion.div>
+        </motion.div>
       </motion.div>
+
+      {/* confetti burst from the token */}
+      {confettiOn && (
+        <div className="confetti" aria-hidden="true">
+          {confetti.map((c) => (
+            <span
+              key={c.key}
+              className="confetti__piece"
+              style={
+                {
+                  width: c.w,
+                  height: c.h,
+                  background: c.color,
+                  borderRadius: c.round ? '50%' : '2px',
+                  animationDelay: `${c.delay}s`,
+                  '--x': `${c.x}px`,
+                  '--y': `${c.y}px`,
+                  '--fall': `${c.fall}px`,
+                  '--r1': `${c.r1}deg`,
+                  '--r2': `${c.r2}deg`,
+                } as React.CSSProperties
+              }
+            />
+          ))}
+        </div>
+      )}
     </motion.div>
   );
 }

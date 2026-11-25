@@ -1,6 +1,7 @@
 import { AnimatePresence, animate, motion, useMotionValue, useTransform, type PanInfo } from 'motion/react';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { isNative } from '../lib/native';
+import { sfx } from '../lib/sound';
 import type { RecentAccount } from '../lib/recent';
 import type { MotionPref, Settings } from '../lib/settings';
 import { duration, ease, spring } from '../motion';
@@ -39,7 +40,10 @@ export function Menu(props: Props) {
     animate(x, toOpen ? 0 : -width.current - 24, { ...spring.smooth, velocity });
   };
 
+  const first = useRef(true);
   useEffect(() => {
+    if (first.current) first.current = false;
+    else sfx.menu(open);
     if (open) setVisible(true);
     settle(open);
     if (!open) {
@@ -251,7 +255,14 @@ function NavRow({
   chevron?: boolean;
 }) {
   return (
-    <motion.button type="button" className="nav-row" onClick={onClick} whileTap={{ scale: 0.98 }} transition={spring.snappy}>
+    <motion.button
+      type="button"
+      className="nav-row"
+      onClick={() => {
+        sfx.tap();
+        onClick();
+      }}
+      whileTap={{ scale: 0.98 }} transition={spring.snappy}>
       <span className="nav-row__icon">{icon}</span>
       <span className="nav-row__label">{label}</span>
       {badge !== undefined && <span className="nav-row__badge">{badge}</span>}
@@ -361,6 +372,13 @@ function SettingsView({ settings, onSettings, outfitCount, databaseUpdated, rece
             <small>Light rays and floating particles</small>
           </span>
           <Toggle label="Background effects" checked={settings.effects} onChange={(v) => onSettings({ effects: v })} />
+        </div>
+        <div className="set-row">
+          <span className="set-row__label">
+            Sound effects
+            <small>Clicks, whooshes and the reward fanfare</small>
+          </span>
+          <Toggle label="Sound effects" checked={settings.sound} onChange={(v) => onSettings({ sound: v })} />
         </div>
         <div className="set-row">
           <span className="set-row__label">

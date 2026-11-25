@@ -6,10 +6,11 @@ export interface Settings {
   motion: MotionPref;
   effects: boolean;
   haptics: boolean;
+  sound: boolean;
 }
 
 const KEY = 'pt.settings.v1';
-const DEFAULTS: Settings = { motion: 'system', effects: true, haptics: true };
+const DEFAULTS: Settings = { motion: 'system', effects: true, haptics: true, sound: true };
 
 function read(): Settings {
   try {

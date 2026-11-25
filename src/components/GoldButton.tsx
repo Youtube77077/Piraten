@@ -1,4 +1,6 @@
 import { AnimatePresence, motion } from 'motion/react';
+import { useRef, useState, type PointerEvent } from 'react';
+import { sfx } from '../lib/sound';
 import { duration, ease, spring } from '../motion';
 
 export type ButtonState = 'idle' | 'loading' | 'done';
@@ -22,6 +24,13 @@ const labelMotion = {
   transition: { duration: duration.short, ease: ease.out },
 };
 
+interface Ripple {
+  id: number;
+  x: number;
+  y: number;
+  size: number;
+}
+
 /** Primary call-to-action. States: default, hover, pressed, loading, disabled, completed. */
 export function GoldButton({
   label,
@@ -35,22 +44,56 @@ export function GoldButton({
   className = '',
 }: Props) {
   const interactive = !disabled && state === 'idle';
+  const [ripples, setRipples] = useState<Ripple[]>([]);
+  const nextId = useRef(0);
+
+  // Ripple of light spreading from the exact press point.
+  const onPointerDown = (e: PointerEvent<HTMLButtonElement>) => {
+    if (!interactive) return;
+    const r = e.currentTarget.getBoundingClientRect();
+    const x = e.clientX - r.left;
+    const y = e.clientY - r.top;
+    const size = Math.hypot(Math.max(x, r.width - x), Math.max(y, r.height - y)) * 2;
+    const id = nextId.current++;
+    setRipples((list) => [...list, { id, x, y, size }]);
+  };
+
   return (
     <motion.button
       type={type}
       className={`gold-btn gold-btn--${size} is-${state} ${disabled ? 'is-disabled' : ''} ${className}`}
-      onClick={interactive ? onClick : undefined}
+      onPointerDown={onPointerDown}
+      onClick={
+        interactive
+          ? () => {
+              sfx.tap();
+              onClick?.();
+            }
+          : undefined
+      }
       aria-disabled={!interactive}
       aria-busy={state === 'loading'}
       disabled={disabled}
-      whileHover={interactive ? { scale: 1.02, y: -1 } : undefined}
-      whileTap={interactive ? { scale: 0.965, y: 1 } : undefined}
+      whileHover={interactive ? { scale: 1.025, y: -2 } : undefined}
+      whileTap={interactive ? { scale: 0.955, y: 1 } : undefined}
       transition={spring.snappy}
     >
       <span className="gold-btn__glow" aria-hidden="true" />
       <span className="gold-btn__face">
         <span className="gold-btn__sheen" aria-hidden="true" />
         <span className="gold-btn__progress" aria-hidden="true" />
+        {ripples.map((rp) => (
+          <motion.span
+            key={rp.id}
+            className="gold-btn__ripple"
+            style={{ left: rp.x - rp.size / 2, top: rp.y - rp.size / 2, width: rp.size, height: rp.size }}
+            initial={{ scale: 0, opacity: 0.55 }}
+            animate={{ scale: 1, opacity: 0 }}
+            transition={{ duration: 0.7, ease: ease.out }}
+            onAnimationComplete={() => setRipples((list) => list.filter((x) => x.id !== rp.id))}
+            aria-hidden="true"
+          />
+        ))}
         <AnimatePresence mode="popLayout" initial={false}>
           <motion.span key={state} className="gold-btn__label" {...labelMotion}>
             {state === 'loading' && <span className="spinner" aria-hidden="true" />}

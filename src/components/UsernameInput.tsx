@@ -2,6 +2,7 @@ import { AnimatePresence, motion } from 'motion/react';
 import { forwardRef, useEffect, useState } from 'react';
 import { duration, ease } from '../motion';
 import { USERNAME_MAX } from '../lib/username';
+import { sfx } from '../lib/sound';
 
 const EXAMPLES = ['CaptainLoot', 'Salty_Sea_Dog', 'KrakenKid07', 'GoldDigger_99', 'StormRunner'];
 
@@ -44,7 +45,10 @@ export const UsernameInput = forwardRef<HTMLInputElement, Props>(function Userna
           name="username"
           className="field__input"
           value={value}
-          onChange={(e) => onChange(e.target.value)}
+          onChange={(e) => {
+            if (e.target.value.length > value.length) sfx.key();
+            onChange(e.target.value);
+          }}
           onFocus={() => setFocused(true)}
           onBlur={() => setFocused(false)}
           maxLength={USERNAME_MAX + 4}

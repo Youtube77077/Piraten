@@ -36,6 +36,14 @@ async function newPage(browser, vp, extra = {}) {
   page.on('requestfailed', (r) => failed.push(`${r.url()} ${r.failure()?.errorText}`));
   page.on('response', (r) => r.status() >= 400 && failed.push(`${r.url()} ${r.status()}`));
   await page.addInitScript((insets) => {
+    window.__sounds = 0;
+    const C = window.AudioContext;
+    if (C) {
+      const osc = C.prototype.createOscillator;
+      const buf = C.prototype.createBufferSource;
+      C.prototype.createOscillator = function () { window.__sounds++; return osc.call(this); };
+      C.prototype.createBufferSource = function () { window.__sounds++; return buf.call(this); };
+    }
     window.__cls = 0;
     window.__longTasks = [];
     try {
@@ -116,6 +124,7 @@ async function runFlow(browser, vp) {
   });
   record(`[${vp}] landing: Find button fully on screen`, landing.btnVisible);
   record(`[${vp}] landing: no disclaimers in the experience`, !DISCLAIMER_WORDS.test(landing.text));
+  record(`[${vp}] landing: title is just "Pirate Token"`, !/claim your|enter your/i.test(landing.text) && /pirate[\s\u00a0]token/i.test(landing.text));
 
   await page.locator('#username').click();
   await page.waitForTimeout(400);
@@ -144,9 +153,17 @@ async function runFlow(browser, vp) {
   const shape = await page.evaluate(() => {
     const f = document.querySelector('.gold-btn__face');
     const cs = getComputedStyle(f);
-    return { clip: cs.clipPath, radius: cs.borderTopLeftRadius, style: getComputedStyle(f.querySelector('.gold-btn__label')).fontStyle };
+    return {
+      clip: cs.clipPath,
+      radius: cs.borderTopLeftRadius,
+      style: getComputedStyle(f.querySelector('.gold-btn__label')).fontStyle,
+      bg: cs.backgroundImage,
+      text: getComputedStyle(f.querySelector('.gold-btn__label')).color,
+    };
   });
   record(`[${vp}] buttons are straight (not slanted)`, shape.clip === 'none' && shape.style === 'normal', `clip-path ${shape.clip}, radius ${shape.radius}, font ${shape.style}`);
+  const blue = [...shape.bg.matchAll(/rgb\((\d+), (\d+), (\d+)\)/g)].every(([, r, g, b]) => +b > +r + 60 && +b > 150);
+  record(`[${vp}] buttons are blue with white text`, blue && shape.text === 'rgb(255, 255, 255)', shape.text);
 
   await page.evaluate(() => {
     const t = (window.__phases = {});
@@ -172,7 +189,7 @@ async function runFlow(browser, vp) {
     text: document.querySelector('.reward')?.innerText ?? '',
   }));
   await shot('05-complete');
-  record(`[${vp}] completion: checkmark + "experience complete"`, /experience complete/i.test(done.title ?? '') && done.check, done.title);
+  record(`[${vp}] completion: checkmark + "Pirate Token complete"`, /^pirate token\s*complete$/i.test((done.title ?? '').trim()) && done.check, done.title);
   record(`[${vp}] completion: username + level`, done.name === 'CaptainLoot' && done.level === `Level ${info.level}`, `${done.name} / ${done.level}`);
   record(`[${vp}] completion: no disclaimers`, !DISCLAIMER_WORDS.test(done.text));
 
@@ -186,6 +203,8 @@ async function runFlow(browser, vp) {
   record(`[${vp}] charge (0→100%) takes 2–4 s`, charge >= 1.9 && charge <= 4.25, `${charge.toFixed(2)} s`);
   record(`[${vp}] auto-returns home ~2 s after completing`, back >= 1.8 && back <= 2.6 && value === '', `${back.toFixed(2)} s, field "${value}"`);
 
+  const sounds = await page.evaluate(() => window.__sounds);
+  record(`[${vp}] sound effects play`, sounds > 40, `${sounds} audio voices started`);
   const perf = await page.evaluate(() => ({ cls: window.__cls, longTasks: window.__longTasks }));
   record(`[${vp}] cumulative layout shift < 0.1`, perf.cls < 0.1, perf.cls.toFixed(4));
   record(`[${vp}] long tasks`, true, perf.longTasks.length ? perf.longTasks.join('ms, ') + 'ms' : 'none');

@@ -8,6 +8,12 @@ import backgroundUrl from './assets/brand/background.webp';
 import './styles.css';
 import App from './App';
 import { hideSplash, initNativeShell, isNative } from './lib/native';
+import { unlockAudio } from './lib/sound';
+
+// Browsers only start audio after a user gesture.
+const unlock = () => unlockAudio();
+window.addEventListener('pointerdown', unlock, { passive: true });
+window.addEventListener('keydown', unlock);
 
 // Pause every ambient CSS animation while the app/tab is not visible.
 const syncVisibility = () => document.documentElement.classList.toggle('is-hidden', document.hidden);

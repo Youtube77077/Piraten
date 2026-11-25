@@ -161,55 +161,78 @@ export const sfx = {
   home() {
     sweep({ dur: 0.5, vol: 0.12, from: 2400, to: 400, attack: 0.08 });
   },
-  /** Charge riser that lasts `seconds`. Returns a stop function. */
+  /**
+   * Charge build-up that lasts `seconds`: a soft, warm pad (C + G + octave, gently
+   * filtered) that swells and rises a fifth, plus quiet bell ticks that speed up and
+   * climb a pentatonic scale toward 100%. Returns a stop function.
+   */
   charge(seconds: number) {
     const c = audio();
     if (!c || !master) return () => undefined;
     const t = c.currentTime;
-    const end = t + seconds;
-    const out = c.createGain();
-    out.gain.setValueAtTime(E, t);
-    out.gain.exponentialRampToValueAtTime(0.11, t + 0.4);
-    out.gain.exponentialRampToValueAtTime(0.2, end);
-    const filter = c.createBiquadFilter();
-    filter.type = 'lowpass';
-    filter.Q.value = 6;
-    filter.frequency.setValueAtTime(260, t);
-    filter.frequency.exponentialRampToValueAtTime(4200, end);
-    filter.connect(out).connect(master);
-    const oscs = [0, 7, -7].map((detune, i) => {
+    const voices: OscillatorNode[] = [];
+
+    // warm pad
+    const pad = c.createGain();
+    pad.gain.setValueAtTime(E, t);
+    pad.gain.setTargetAtTime(0.03, t, seconds * 0.25);
+    pad.gain.setTargetAtTime(0.05, t + seconds * 0.6, seconds * 0.2);
+    const lp = c.createBiquadFilter();
+    lp.type = 'lowpass';
+    lp.Q.value = 0.5;
+    lp.frequency.setValueAtTime(700, t);
+    lp.frequency.setTargetAtTime(1800, t, seconds * 0.5);
+    lp.connect(pad).connect(master);
+    [
+      { f: 261.63, type: 'triangle' as OscillatorType },
+      { f: 392.0, type: 'triangle' as OscillatorType },
+      { f: 523.25, type: 'sine' as OscillatorType },
+    ].forEach(({ f, type }, i) => {
       const o = c.createOscillator();
-      o.type = i === 0 ? 'sawtooth' : 'square';
-      o.detune.value = detune;
-      o.frequency.setValueAtTime(98, t);
-      o.frequency.exponentialRampToValueAtTime(392, end);
-      o.connect(filter);
+      o.type = type;
+      o.detune.value = i === 1 ? 4 : i === 2 ? -4 : 0;
+      o.frequency.setValueAtTime(f, t);
+      o.frequency.setTargetAtTime(f * 1.5, t + 0.2, seconds * 0.45); // smooth rise of a fifth
+      o.connect(lp);
       o.start(t);
-      return o;
+      voices.push(o);
     });
-    // rising shimmer on top
-    const n = noise(c);
-    const nf = c.createBiquadFilter();
-    nf.type = 'bandpass';
-    nf.Q.value = 3;
-    nf.frequency.setValueAtTime(1500, t);
-    nf.frequency.exponentialRampToValueAtTime(9000, end);
-    const ng = c.createGain();
-    ng.gain.setValueAtTime(E, t);
-    ng.gain.exponentialRampToValueAtTime(0.06, end);
-    n.connect(nf).connect(ng).connect(master);
-    n.start(t);
+
+    // accelerating bell ticks on a pentatonic scale
+    const scale = [523.25, 587.33, 659.25, 783.99, 880, 1046.5, 1174.66, 1318.51, 1567.98];
+    let at = 0.15;
+    while (at < seconds - 0.05) {
+      const p = at / seconds;
+      const f = scale[Math.min(scale.length - 1, Math.floor(p * scale.length))];
+      const o = c.createOscillator();
+      const g = c.createGain();
+      const st = t + at;
+      o.type = 'sine';
+      o.frequency.setValueAtTime(f, st);
+      g.gain.setValueAtTime(E, st);
+      g.gain.exponentialRampToValueAtTime(0.022 + p * 0.022, st + 0.006);
+      g.gain.exponentialRampToValueAtTime(E, st + 0.22);
+      o.connect(g).connect(master);
+      o.start(st);
+      o.stop(st + 0.25);
+      voices.push(o);
+      at += 0.34 - 0.24 * Math.pow(p, 0.8); // 0.34 s apart at first, ~0.1 s near the end
+    }
+
     let stopped = false;
     return () => {
       if (stopped) return;
       stopped = true;
       const s = c.currentTime;
-      out.gain.cancelScheduledValues(s);
-      ng.gain.cancelScheduledValues(s);
-      out.gain.setTargetAtTime(E, s, 0.03);
-      ng.gain.setTargetAtTime(E, s, 0.03);
-      oscs.forEach((o) => o.stop(s + 0.2));
-      n.stop(s + 0.2);
+      pad.gain.cancelScheduledValues(s);
+      pad.gain.setTargetAtTime(E, s, 0.04);
+      voices.forEach((o) => {
+        try {
+          o.stop(s + 0.25);
+        } catch {
+          /* already stopped */
+        }
+      });
     };
   },
   /** Status step tick during the charge. */

@@ -11,7 +11,8 @@
     "assets": "python3 scripts/make-assets.py",
     "cap:sync": "npm run build && cap sync ios",
     "test:e2e": "node tests/e2e.mjs",
-    "build:html": "tsc -b && vite build --mode single && node -e \"require('fs').renameSync('dist-single/index.html','dist-single/pirate-token.html')\""
+    "build:html": "tsc -b && vite build --mode single && node -e \"require('fs').renameSync('dist-single/index.html','dist-single/pirate-token.html')\"",
+    "build:odds": "node scripts/build-odds.mjs"
   },
   "dependencies": {
     "@capacitor/core": "^8.6.2",

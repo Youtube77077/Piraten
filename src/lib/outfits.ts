@@ -13,20 +13,60 @@ export interface Outfit {
   image: string;
 }
 
-import { randomIndex } from './random';
+import { randomFloat } from './random';
 
 type Row = [id: string, name: string, kind: 0 | 1];
 
 const IMG_BASE = 'https://fortnite-api.com/images/cosmetics/br/';
 const NEW_FEED = 'https://fortnite-api.com/v2/cosmetics/new?language=en';
 const EXTRA_KEY = 'pt.extraOutfits.v1';
-const BAD_NAMES = new Set(['', 'tbd', 'null', 'npc', 'none', 'placeholder']);
+const BAD_NAMES = new Set(['', 'tbd', 'npc', 'none', 'placeholder']);
+const isPlaceholderName = (name: string) => name === 'null' || BAD_NAMES.has(name.toLowerCase());
 
 const imageFor = (id: string, kind: 0 | 1) =>
   `${IMG_BASE}${id.toLowerCase()}/${kind === 0 ? 'icon' : 'smallicon'}.png`;
 
 let outfits: Outfit[] = [];
 let loading: Promise<Outfit[]> | null = null;
+
+/**
+ * Popularity odds (src/data/outfit-odds.json, built from scripts/outfit-odds.tsv):
+ * a skin's chance of being picked is proportional to its weight. Skins without a
+ * weight (including ones added after the list was made) are never picked.
+ */
+let weights: Record<string, number> = {};
+let pool: Outfit[] = [];
+let cumulative: number[] = [];
+let totalWeight = 0;
+
+function rebuildPool() {
+  pool = [];
+  cumulative = [];
+  totalWeight = 0;
+  for (const o of outfits) {
+    const w = weights[o.id];
+    if (!w || w <= 0) continue;
+    totalWeight += w;
+    pool.push(o);
+    cumulative.push(totalWeight);
+  }
+}
+
+/** Weighted random pick: binary search the cumulative weights. */
+function weightedPick(): Outfit | undefined {
+  if (!pool.length) return undefined;
+  const r = randomFloat() * totalWeight;
+  let lo = 0;
+  let hi = cumulative.length - 1;
+  while (lo < hi) {
+    const mid = (lo + hi) >> 1;
+    if (cumulative[mid] > r) hi = mid;
+    else lo = mid + 1;
+  }
+  return pool[lo];
+}
+
+export const pickChance = (id: string) => (totalWeight ? (weights[id] ?? 0) / totalWeight : 0);
 const failed = new Set<string>();
 
 function readExtras(): Row[] {
@@ -76,7 +116,7 @@ async function mergeNewOutfits() {
       .filter(
         (i) =>
           i?.type?.value === 'outfit' &&
-          !BAD_NAMES.has((i.name ?? '').trim().toLowerCase()) &&
+          !isPlaceholderName((i.name ?? '').trim()) &&
           !/(^|_)npc(_|$)/i.test(i.id) &&
           (i.images?.icon || i.images?.smallIcon),
       )
@@ -96,10 +136,12 @@ async function mergeNewOutfits() {
 
 export function loadOutfits(): Promise<Outfit[]> {
   if (!loading) {
-    loading = import('../data/outfits.json').then((mod) => {
+    loading = Promise.all([import('../data/outfits.json'), import('../data/outfit-odds.json')]).then(([mod, oddsMod]) => {
       const data = (mod.default ?? mod) as unknown as { outfits: Row[] };
+      weights = (oddsMod.default ?? oddsMod) as Record<string, number>;
       outfits = data.outfits.map(([id, name, kind]) => ({ id, name, image: imageFor(id, kind) }));
       addRows(readExtras());
+      rebuildPool();
       void mergeNewOutfits();
       return outfits;
     });
@@ -131,14 +173,15 @@ export function preloadImage(src: string, timeoutMs = 9000): Promise<void> {
 }
 
 /**
- * Picks a uniformly random outfit from the whole database whose icon actually loads.
+ * Picks a random outfit, weighted by popularity, whose icon actually loads.
  * Outfits whose image fails are skipped and another is drawn.
  */
 export async function pickRandomOutfit(excludeId?: string, attempts = 8): Promise<Outfit> {
   const list = await loadOutfits();
   let lastError: unknown;
   for (let i = 0; i < attempts; i++) {
-    const candidate = list[randomIndex(list.length)];
+    if (!list.length) break;
+    const candidate = weightedPick();
     if (!candidate || candidate.id === excludeId || failed.has(candidate.id)) continue;
     try {
       await preloadImage(candidate.image);
@@ -157,7 +200,7 @@ export function markOutfitFailed(id: string) {
 
 /**
  * Keeps one random, already-decoded outfit ready so the reveal is instant.
- * Because the prepared outfit is itself a uniform random draw, this does not bias selection.
+ * Because the prepared outfit is itself a weighted random draw, this does not change the odds.
  */
 let prepared: Promise<Outfit> | null = null;
 

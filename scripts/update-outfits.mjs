@@ -8,12 +8,14 @@ const OUT = fileURLToPath(new URL('../src/data/outfits.json', import.meta.url));
 const META = fileURLToPath(new URL('../src/data/outfits-meta.json', import.meta.url));
 
 // Placeholder / internal entries that are not real, wearable outfits.
-const BAD_NAMES = new Set(['', 'tbd', 'null', 'npc', 'none', 'placeholder']);
+// "null" (lowercase) is a placeholder; "Null" is a real outfit, so that one check is case-sensitive.
+const BAD_NAMES = new Set(['', 'tbd', 'npc', 'none', 'placeholder']);
+const isPlaceholderName = (name) => name === 'null' || BAD_NAMES.has(name.toLowerCase());
 
 export function isUsableOutfit(item) {
   if (!item || item.type?.value !== 'outfit') return false;
   const name = (item.name ?? '').trim();
-  if (BAD_NAMES.has(name.toLowerCase())) return false;
+  if (isPlaceholderName(name)) return false;
   if (/(^|_)npc(_|$)/i.test(item.id)) return false;
   const img = item.images ?? {};
   return Boolean(img.icon || img.smallIcon);
@@ -40,6 +42,7 @@ async function main() {
   await writeFile(OUT, JSON.stringify({ ...meta, outfits }).replace(/\],\[/g, '],\n['));
   await writeFile(META, JSON.stringify(meta, null, 2) + '\n');
   console.log(`Wrote ${outfits.length} outfits to src/data/outfits.json`);
+  await import('./build-odds.mjs'); // re-apply the popularity odds to the refreshed list
 }
 
 main().catch((err) => { console.error(err.message); process.exit(1); });

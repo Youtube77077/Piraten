@@ -6,10 +6,13 @@ import { ease, fadeUp, spring, stagger } from '../motion';
 import { GoldButton, type ButtonState } from './GoldButton';
 import { Token } from './Token';
 import { UsernameInput } from './UsernameInput';
+import { OctopusIcon } from './OctopusIcon';
 
 interface Props {
   initialName: string;
   onSubmit: (username: string) => Promise<void>;
+  onOctopus: () => void;
+  behind?: boolean;
 }
 
 const TITLE = 'Pirate Token';
@@ -21,7 +24,7 @@ const letter: Variants = {
   exit: { opacity: 0, y: -24, transition: { duration: 0.22, ease: ease.in } },
 };
 
-export function IntroScreen({ initialName, onSubmit }: Props) {
+export function IntroScreen({ initialName, onSubmit, onOctopus, behind = false }: Props) {
   const [value, setValue] = useState(initialName);
   const [touched, setTouched] = useState(false);
   const [state, setState] = useState<ButtonState>('idle');
@@ -54,7 +57,7 @@ export function IntroScreen({ initialName, onSubmit }: Props) {
 
   return (
     <motion.section
-      className="screen intro"
+      className={`screen intro ${behind ? 'is-behind' : ''}`}
       variants={stagger(0.08, 0.1)}
       initial="hidden"
       animate="show"
@@ -131,6 +134,17 @@ export function IntroScreen({ initialName, onSubmit }: Props) {
           disabled={!check.ok && state === 'idle'}
         />
       </motion.form>
+
+      <motion.div variants={fadeUp} className="intro__octo">
+        <GoldButton
+          variant="secondary"
+          size="lg"
+          label="Octopus"
+          icon={<OctopusIcon />}
+          onClick={onOctopus}
+          disabled={state !== 'idle'}
+        />
+      </motion.div>
     </motion.section>
   );
 }

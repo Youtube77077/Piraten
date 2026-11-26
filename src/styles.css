@@ -1973,3 +1973,530 @@ button {
     justify-content: flex-start;
   }
 }
+
+/* ==========================================================================
+   Octopus — secondary button, amount dialog, give-all run
+   ========================================================================== */
+.gold-btn--secondary .gold-btn__face {
+  background: var(--surface);
+  box-shadow: inset 0 -3px 0 rgba(8, 73, 176, 0.12), inset 0 0 0 2px rgba(26, 134, 239, 0.18);
+}
+
+.gold-btn--secondary .gold-btn__label {
+  color: var(--blue-600);
+  text-shadow: none;
+}
+
+.gold-btn--secondary .gold-btn__glow {
+  background: rgba(var(--amber-shadow), 0.3);
+  opacity: 0.55;
+}
+
+.gold-btn--secondary .gold-btn__sheen {
+  background: linear-gradient(100deg, transparent 30%, rgba(54, 174, 252, 0.18) 48%, transparent 66%);
+}
+
+.gold-btn--secondary .gold-btn__ripple {
+  background: radial-gradient(circle, rgba(26, 134, 239, 0.35) 0%, rgba(26, 134, 239, 0.12) 45%, transparent 70%);
+}
+
+.gold-btn--secondary.is-disabled .gold-btn__face {
+  background: rgba(255, 255, 255, 0.7);
+}
+
+.gold-btn--secondary.is-disabled .gold-btn__label {
+  color: rgba(11, 99, 216, 0.5);
+}
+
+.gold-btn--lg .gold-btn__face {
+  min-height: 54px;
+}
+
+.intro__octo {
+  width: 100%;
+  margin-top: -6px;
+}
+
+.octo-icon {
+  width: 1.15em;
+  height: 1.15em;
+  flex: none;
+  vertical-align: -0.18em;
+}
+
+.octo-icon__body {
+  fill: currentColor;
+}
+
+.octo-icon__eye {
+  fill: var(--surface);
+}
+
+/* amount dialog */
+.octo-dialog {
+  position: fixed;
+  inset: 0;
+  z-index: 25;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: calc(var(--safe-top) + 16px) 16px calc(var(--safe-bottom) + 16px);
+}
+
+.octo-dialog__scrim {
+  position: absolute;
+  inset: 0;
+  background: rgba(40, 20, 0, 0.38);
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+}
+
+.octo-card {
+  position: relative;
+  width: 100%;
+  max-width: 420px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 10px;
+  padding: 28px 22px 22px;
+  border-radius: 24px;
+  background: var(--surface);
+  box-shadow: 0 30px 80px rgba(var(--amber-shadow), 0.4);
+}
+
+.octo-card__close {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+}
+
+.octo-card__icon {
+  display: grid;
+  place-items: center;
+  width: 64px;
+  height: 64px;
+  border-radius: 20px;
+  font-size: 36px;
+  color: var(--surface);
+  background: linear-gradient(180deg, var(--blue-400), var(--blue-600));
+  box-shadow: 0 10px 24px rgba(var(--blue-glow), 0.35), inset 0 2px 0 rgba(255, 255, 255, 0.45);
+}
+
+.octo-card__icon .octo-icon__eye {
+  fill: var(--blue-600);
+}
+
+.octo-card__title {
+  margin: 4px 0 0;
+  font-family: var(--font-display);
+  font-weight: 900;
+  font-size: 34px;
+  line-height: 1;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--ink);
+}
+
+.octo-card__lede {
+  margin: 0 0 6px;
+  font-size: 15px;
+  color: var(--ink-2);
+}
+
+.octo-card__label {
+  align-self: flex-start;
+  margin: 4px 4px 0;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 13px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-2);
+}
+
+.octo-input {
+  position: relative;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  height: 64px;
+  padding: 0 18px;
+  border-radius: 16px;
+  background: var(--surface-2);
+  box-shadow: inset 0 0 0 2px transparent;
+  transition: box-shadow var(--dur-short) var(--ease-out), background-color var(--dur-short) var(--ease-out);
+}
+
+.octo-input:focus-within {
+  background: var(--surface);
+  box-shadow: inset 0 0 0 2.5px var(--blue-500), 0 0 24px rgba(var(--blue-glow), 0.18);
+}
+
+.octo-input.has-error {
+  box-shadow: inset 0 0 0 2.5px var(--danger);
+}
+
+.octo-input input {
+  flex: 1;
+  width: 100%;
+  min-width: 0;
+  height: 100%;
+  border: 0;
+  outline: none;
+  background: transparent;
+  font-family: var(--font-display);
+  font-weight: 900;
+  font-size: 32px;
+  letter-spacing: 0.04em;
+  color: var(--ink);
+  caret-color: var(--blue-600);
+  font-variant-numeric: tabular-nums;
+}
+
+.octo-input input::placeholder {
+  color: rgba(17, 17, 17, 0.25);
+  font-weight: 800;
+}
+
+.octo-input__max {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 18px;
+  color: var(--ink-3);
+}
+
+.octo-card__hint {
+  align-self: flex-start;
+  min-height: 20px;
+  margin: 0 4px 8px;
+  font-size: 13px;
+  color: var(--ink-3);
+}
+
+.octo-card__hint.is-error {
+  color: var(--danger);
+  font-weight: 600;
+}
+
+/* give-all run */
+.octo-stage {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  max-width: 480px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.octo-run__body {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 14px;
+}
+
+.octo-head {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.octo-head__token {
+  position: relative;
+  flex: none;
+  width: clamp(92px, 26vw, 120px);
+  aspect-ratio: 1;
+  display: grid;
+  place-items: center;
+  perspective: 800px;
+}
+
+.octo-ring {
+  inset: -4%;
+  width: 108%;
+  height: 108%;
+  transform: rotate(-90deg);
+}
+
+.octo-head__logo {
+  width: 74%;
+  aspect-ratio: 1;
+}
+
+.octo-head__text {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.octo-head__eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 15px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--blue-700);
+}
+
+.octo-head__count {
+  font-family: var(--font-display);
+  font-weight: 900;
+  font-size: clamp(40px, 12vw, 56px);
+  line-height: 1;
+  color: var(--surface);
+  text-shadow: var(--text-3d);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.octo-head__count small {
+  font-size: 0.5em;
+  letter-spacing: 0.02em;
+}
+
+.octo-head__eta {
+  margin-top: 4px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink-2);
+}
+
+.octo-current {
+  position: relative;
+  height: 92px;
+}
+
+.octo-card-now {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 10px 14px 10px 10px;
+  border-radius: 18px;
+  background: var(--surface);
+  box-shadow: var(--shadow-soft), 0 0 0 3px rgba(26, 134, 239, 0.25);
+}
+
+.octo-card-now__avatar,
+.octo-row__avatar {
+  flex: none;
+  overflow: hidden;
+  background: radial-gradient(90% 80% at 50% 35%, #6fd6ff, #1a86ef 60%, #0b63d8);
+}
+
+.octo-card-now__avatar {
+  width: 72px;
+  height: 72px;
+  border-radius: 14px;
+}
+
+.octo-card-now__avatar img,
+.octo-row__avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center top;
+}
+
+.octo-card-now__text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.octo-card-now__name {
+  font-family: var(--font-display);
+  font-weight: 900;
+  font-size: 26px;
+  line-height: 1.05;
+  color: var(--ink);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.octo-card-now__level {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 15px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--blue-600);
+}
+
+.octo-card-now__token {
+  position: relative;
+  flex: none;
+  width: 46px;
+  height: 46px;
+}
+
+.octo-card-now__token img {
+  width: 100%;
+  height: 100%;
+}
+
+.octo-card-now__check {
+  position: absolute;
+  right: -6px;
+  bottom: -4px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: var(--blue-600);
+  box-shadow: 0 0 0 2.5px var(--surface);
+}
+
+.octo-card-now__check svg,
+.octo-row__got svg {
+  width: 72%;
+  height: 72%;
+  fill: none;
+  stroke: var(--surface);
+  stroke-width: 3.4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.octo-feed {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: calc(6 * 50px);
+  overflow: hidden;
+  -webkit-mask-image: linear-gradient(180deg, #000 70%, transparent);
+  mask-image: linear-gradient(180deg, #000 70%, transparent);
+}
+
+.octo-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+  padding: 4px 10px 4px 4px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.82);
+  animation: octo-row-in 0.32s var(--ease-out);
+}
+
+@keyframes octo-row-in {
+  from { transform: translate3d(0, -14px, 0); opacity: 0; }
+  to { transform: translate3d(0, 0, 0); }
+}
+
+.octo-row__avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 9px;
+}
+
+.octo-row__name {
+  flex: 1;
+  min-width: 0;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 18px;
+  color: var(--ink);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.octo-row__level {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 14px;
+  letter-spacing: 0.08em;
+  color: var(--blue-600);
+}
+
+.octo-row__got {
+  position: relative;
+  width: 26px;
+  height: 26px;
+}
+
+.octo-row__got img {
+  width: 100%;
+  height: 100%;
+}
+
+.octo-row__got svg {
+  position: absolute;
+  right: -4px;
+  bottom: -3px;
+  width: 14px;
+  height: 14px;
+  padding: 2px;
+  border-radius: 50%;
+  background: var(--blue-600);
+  box-shadow: 0 0 0 2px var(--surface);
+}
+
+.octo-skip {
+  align-self: center;
+  margin-top: 2px;
+}
+
+.octo-skip:disabled {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.octo-complete__token {
+  width: clamp(130px, 36vw, 180px);
+}
+
+.octo-summary__icon {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 60px;
+  height: 60px;
+  border-radius: 12px;
+  font-size: 34px;
+  color: var(--surface);
+  background: linear-gradient(180deg, var(--blue-400), var(--blue-600));
+}
+
+.octo-summary__icon .octo-icon__eye {
+  fill: var(--blue-600);
+}
+
+@media (max-height: 700px) {
+  .octo-feed {
+    max-height: calc(4 * 50px);
+  }
+  .octo-current {
+    height: 84px;
+  }
+  .octo-card-now__avatar {
+    width: 62px;
+    height: 62px;
+  }
+}
+
+.motion-reduced .octo-row {
+  animation: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root:not(.motion-full) .octo-row {
+    animation: none;
+  }
+}

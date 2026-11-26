@@ -6,6 +6,8 @@ import { IntroScreen } from './components/IntroScreen';
 import { Menu } from './components/Menu';
 import { ProfileScreen } from './components/ProfileScreen';
 import { RewardSequence } from './components/RewardSequence';
+import { OctopusDialog } from './components/OctopusDialog';
+import { OctopusSequence } from './components/OctopusSequence';
 import { loadOutfits, markOutfitFailed, outfitCount, prepareNextOutfit, takeRandomOutfit, type Outfit } from './lib/outfits';
 import { tap } from './lib/native';
 import { randomLevel } from './lib/random';
@@ -29,6 +31,8 @@ export default function App() {
   const [prefill, setPrefill] = useState('');
   const [introKey, setIntroKey] = useState(0);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [octoOpen, setOctoOpen] = useState(false);
+  const [octoRun, setOctoRun] = useState<number | null>(null);
   const [recent, setRecent] = useState<RecentAccount[]>(readRecent);
   const [settings, updateSettings] = useSettings();
   const [count, setCount] = useState(outfitMeta.count);
@@ -106,7 +110,13 @@ export default function App() {
         <motion.main className="app" layoutScroll aria-hidden={menuOpen}>
           <AnimatePresence mode="popLayout">
             {stage === 'intro' && (
-              <IntroScreen key={`intro-${introKey}`} initialName={prefill} onSubmit={findAccount} />
+              <IntroScreen
+                key={`intro-${introKey}`}
+                initialName={prefill}
+                onSubmit={findAccount}
+                onOctopus={() => setOctoOpen(true)}
+                behind={octoRun !== null}
+              />
             )}
             {stage !== 'intro' && session && (
               <ProfileScreen
@@ -137,10 +147,36 @@ export default function App() {
           )}
         </AnimatePresence>
       </LayoutGroup>
+      <AnimatePresence>
+        {octoOpen && (
+          <OctopusDialog
+            key="octo-dialog"
+            onClose={() => setOctoOpen(false)}
+            onStart={(n) => {
+              void tap('MEDIUM');
+              setOctoOpen(false);
+              setOctoRun(n);
+            }}
+          />
+        )}
+      </AnimatePresence>
+      <AnimatePresence>
+        {octoRun !== null && (
+          <OctopusSequence
+            key="octo-run"
+            count={octoRun}
+            onFinished={() => {
+              sfx.home();
+              setOctoRun(null);
+              goHome(false);
+            }}
+          />
+        )}
+      </AnimatePresence>
       <Menu
         open={menuOpen}
         onOpenChange={setMenuOpen}
-        enabled={stage !== 'reward'}
+        enabled={stage !== 'reward' && octoRun === null && !octoOpen}
         settings={settings}
         onSettings={updateSettings}
         recent={recent}

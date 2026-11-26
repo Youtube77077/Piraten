@@ -1,5 +1,5 @@
 import { AnimatePresence, motion } from 'motion/react';
-import { useRef, useState, type PointerEvent } from 'react';
+import { useRef, useState, type PointerEvent, type ReactNode } from 'react';
 import { sfx } from '../lib/sound';
 import { duration, ease, spring } from '../motion';
 
@@ -14,6 +14,9 @@ interface Props {
   onClick?: () => void;
   type?: 'button' | 'submit';
   size?: 'lg' | 'xl';
+  /** "secondary" = white face with a blue label. */
+  variant?: 'primary' | 'secondary';
+  icon?: ReactNode;
   className?: string;
 }
 
@@ -41,6 +44,8 @@ export function GoldButton({
   onClick,
   type = 'button',
   size = 'lg',
+  variant = 'primary',
+  icon,
   className = '',
 }: Props) {
   const interactive = !disabled && state === 'idle';
@@ -61,7 +66,7 @@ export function GoldButton({
   return (
     <motion.button
       type={type}
-      className={`gold-btn gold-btn--${size} is-${state} ${disabled ? 'is-disabled' : ''} ${className}`}
+      className={`gold-btn gold-btn--${size} gold-btn--${variant} is-${state} ${disabled ? 'is-disabled' : ''} ${className}`}
       onPointerDown={onPointerDown}
       onClick={
         interactive
@@ -107,6 +112,7 @@ export function GoldButton({
                 />
               </svg>
             )}
+            {state === 'idle' && icon}
             {state === 'idle' ? label : state === 'loading' ? loadingLabel : doneLabel}
           </motion.span>
         </AnimatePresence>

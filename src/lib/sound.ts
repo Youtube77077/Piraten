@@ -254,3 +254,8 @@ export const sfx = {
     [783.99, 987.77, 1174.66, 1567.98].forEach((f, i) => tone({ freq: f, dur: 0.35, vol: 0.09, at: i * 0.07 }));
   },
 };
+
+/** Soft tick for each account in the Octopus run; pitch rises with progress (0–1). */
+export function grantTick(progress: number) {
+  tone({ freq: 880 + progress * 880, type: 'triangle', dur: 0.06, vol: 0.035 + progress * 0.02 });
+}

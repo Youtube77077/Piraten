@@ -430,6 +430,10 @@ function SettingsView({ settings, onSettings, outfitCount, databaseUpdated, rece
             reflect what an account actually owns. Account levels are randomly generated, not real stats.
           </li>
           <li>
+            <strong>Octopus.</strong> The usernames are made up and randomly generated. No real accounts are involved and
+            nobody receives anything.
+          </li>
+          <li>
             <strong>Your data stays on your device.</strong> Usernames you enter and your recent list are stored only on
             this device and are never sent anywhere.
           </li>
